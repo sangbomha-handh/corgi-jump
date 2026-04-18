@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#4A90D9">
+  <meta name="description" content="Corgi Jump - 귀여운 코기와 함께하는 점프 게임">
+  <title>Corgi Jump</title>
+  <style>
+    @font-face {
+      font-family: 'BagelFat';
+      src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_JAMO@1.0/BagelFatOne-Regular.woff2') format('woff2');
+      font-weight: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'KerisKedyuche';
+      src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2601-3@1.0/KERISKEDU_R.woff2') format('woff2');
+      font-weight: 400;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'KerisKedyuche';
+      src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2601-3@1.0/KERISKEDU_B.woff2') format('woff2');
+      font-weight: 700;
+      font-display: swap;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: #222;
+      font-family: 'KerisKedyuche', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior: none;
+    }
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+    }
+
+    /* ── Game canvas ── */
+    #game-container {
+      position: relative;
+      touch-action: none;
+    }
+    canvas { display: block; background: #87CEEB; }
+
+    /* ── Lobby overlay ── */
+    #lobby-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(135deg, #2C3E7B 0%, #4A90D9 50%, #87CEEB 100%);
+      z-index: 100;
+      overflow-y: auto;
+      color: #fff;
+    }
+    #lobby-overlay.active { display: flex; flex-direction: column; align-items: center; }
+
+    .lobby-inner {
+      width: 100%;
+      max-width: 420px;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Common lobby styles ── */
+    .lobby-title {
+      font-size: 28px;
+      font-weight: bold;
+      text-align: center;
+      margin: 16px 0;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .lobby-subtitle {
+      font-size: 14px;
+      text-align: center;
+      opacity: 0.7;
+      margin-bottom: 16px;
+    }
+
+    .lobby-btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #fff;
+      margin-bottom: 10px;
+      transition: opacity 0.15s;
+    }
+    .lobby-btn:active { opacity: 0.8; }
+    .btn-green { background: #4CAF50; }
+    .btn-gray { background: #607D8B; }
+    .btn-red { background: #E53935; }
+    .btn-blue { background: #2196F3; }
+
+    .lobby-input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+      font-size: 15px;
+      outline: none;
+      margin-bottom: 10px;
+    }
+    .lobby-input::placeholder { color: rgba(255,255,255,0.5); }
+    .lobby-input:focus { border-color: rgba(255,255,255,0.6); }
+
+    /* ── Nickname bar ── */
+    .nick-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .nick-bar input { flex: 1; margin-bottom: 0; }
+    .nick-bar button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.25);
+      color: #fff;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    /* ── Room list ── */
+    .room-list {
+      flex: 1;
+      min-height: 200px;
+    }
+    .room-card {
+      background: rgba(255,255,255,0.15);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .room-card:active { background: rgba(255,255,255,0.25); }
+    .room-info h3 { font-size: 16px; margin-bottom: 4px; }
+    .room-info span { font-size: 12px; opacity: 0.7; }
+    .room-join-btn {
+      padding: 8px 18px;
+      border: none;
+      border-radius: 8px;
+      background: #4CAF50;
+      color: #fff;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .room-empty {
+      text-align: center;
+      padding: 40px;
+      opacity: 0.5;
+      font-size: 14px;
+    }
+
+    /* ── Waiting room ── */
+    .player-slots {
+      display: flex;
+      gap: 12px;
+      margin: 16px 0;
+    }
+    .player-slot {
+      flex: 1;
+      background: rgba(255,255,255,0.12);
+      border-radius: 14px;
+      padding: 16px;
+      text-align: center;
+      min-height: 120px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+    .player-slot .slot-name {
+      font-size: 15px;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+    .player-slot .slot-status {
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 10px;
+      display: inline-block;
+    }
+    .slot-status.ready { background: #4CAF50; }
+    .slot-status.host { background: #FF9800; }
+    .slot-status.waiting { background: rgba(255,255,255,0.2); }
+    .slot-empty {
+      opacity: 0.4;
+      font-size: 14px;
+    }
+
+    /* ── Chat ── */
+    .chat-box {
+      background: rgba(0,0,0,0.2);
+      border-radius: 12px;
+      padding: 10px;
+      margin: 12px 0;
+      flex: 1;
+      min-height: 120px;
+      max-height: 200px;
+      overflow-y: auto;
+      font-size: 13px;
+    }
+    .chat-msg { margin-bottom: 4px; }
+    .chat-msg b { color: #FFD700; }
+    .chat-input-bar {
+      display: flex;
+      gap: 8px;
+    }
+    .chat-input-bar input { flex: 1; margin-bottom: 0; }
+    .chat-input-bar button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 10px;
+      background: #2196F3;
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    /* ── Sections (toggle visibility) ── */
+    .section { display: none; flex-direction: column; flex: 1; }
+    .section.active { display: flex; }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .top-bar h2 { font-size: 20px; }
+    .back-btn {
+      padding: 6px 14px;
+      border: none;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+      font-size: 13px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Lobby Overlay (HTML UI) -->
+  <div id="lobby-overlay">
+    <div class="lobby-inner">
+      <div class="lobby-title">Corgi Jump!</div>
+      <div class="lobby-subtitle">멀티플레이</div>
+
+      <!-- Main Lobby Section -->
+      <div id="section-lobby" class="section active">
+        <div class="nick-bar">
+          <input id="nick-input" class="lobby-input" placeholder="닉네임" maxlength="12">
+          <button id="nick-btn">변경</button>
+        </div>
+
+        <input id="room-title-input" class="lobby-input" placeholder="방 제목 입력..." maxlength="20">
+        <button id="create-room-btn" class="lobby-btn btn-green">방 만들기</button>
+
+        <div class="top-bar" style="margin-top:16px">
+          <h2>방 목록</h2>
+          <button id="refresh-btn" class="back-btn">새로고침</button>
+        </div>
+        <div id="room-list" class="room-list">
+          <div class="room-empty">생성된 방이 없습니다</div>
+        </div>
+
+        <button id="back-to-title-btn" class="lobby-btn btn-gray" style="margin-top:auto">돌아가기</button>
+      </div>
+
+      <!-- Waiting Room Section -->
+      <div id="section-room" class="section">
+        <div class="top-bar">
+          <h2 id="room-title-display">대기방</h2>
+        </div>
+
+        <div class="player-slots">
+          <div class="player-slot" id="slot-0">
+            <div class="slot-empty">대기 중...</div>
+          </div>
+          <div class="player-slot" id="slot-1">
+            <div class="slot-empty">대기 중...</div>
+          </div>
+        </div>
+
+        <button id="ready-btn" class="lobby-btn btn-blue" style="display:none">준비</button>
+        <button id="start-btn" class="lobby-btn btn-green" style="display:none">게임 시작</button>
+
+        <div class="chat-box" id="chat-box"></div>
+        <div class="chat-input-bar">
+          <input id="chat-input" class="lobby-input" placeholder="메시지 입력..." maxlength="100">
+          <button id="chat-send-btn">전송</button>
+        </div>
+
+        <button id="leave-room-btn" class="lobby-btn btn-red" style="margin-top:12px">나가기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Canvas -->
+  <div id="game-container">
+    <canvas id="game"></canvas>
+  </div>
+
+  <script>
+    // Multiplayer server URL (update after Render deployment)
+    window.MULTIPLAYER_SERVER = '';  // e.g. 'https://corgi-jump-server.onrender.com'
+  </script>
+  <script src="lobby.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
